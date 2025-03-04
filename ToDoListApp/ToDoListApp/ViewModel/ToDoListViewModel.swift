@@ -44,6 +44,11 @@ class ToDoListViewModel: ObservableObject {
         }
         
         repository.saveToDoItems(toDoItems)
+        
+        inputTask = ""
+        priority = .Low
+        tag = "None"
+        notificationTime = nil
     }
     
     func removeItem(_ item: ToDoItem) {

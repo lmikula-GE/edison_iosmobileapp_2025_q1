@@ -23,6 +23,7 @@ struct ContentView: View {
                             Text(priority.rawValue).tag(priority)
                         }
                     }
+                    .pickerStyle(MenuPickerStyle())
                     
                     Menu("Tag") {
                         Picker("Tag", selection: $viewModel.tag) {
@@ -113,15 +114,6 @@ struct ContentView: View {
                             
                             Spacer()
                             
-                            if item.priority == "Medium" {
-                                Image(systemName: "exclamationmark.2")
-                                    .foregroundColor(.orange)
-                            }
-                            else if item.priority == "High" {
-                                Image(systemName: "exclamationmark.3")
-                                    .foregroundColor(.red)
-                            }
-                            
                             if viewModel.editingItemId == item.id {
                                 Menu {
                                     Picker("Priority", selection: Binding(
@@ -132,6 +124,7 @@ struct ContentView: View {
                                         Text("Medium").tag("Medium")
                                         Text("High").tag("High")
                                     }
+                                    .pickerStyle(MenuPickerStyle())
 
                                     Picker("Tag", selection: Binding(
                                         get: { item.tag },
@@ -141,6 +134,7 @@ struct ContentView: View {
                                             Text(tag).tag(tag)
                                         }
                                     }
+                                    .pickerStyle(MenuPickerStyle())
                                     
                                     Button("Set Notification") {
                                         viewModel.showDatePickerToUpdate = true 
@@ -172,6 +166,15 @@ struct ContentView: View {
                                     }
                                 }
                             }
+                            
+                            if item.priority == "Medium" {
+                                Image(systemName: "exclamationmark.2")
+                                    .foregroundColor(.orange)
+                            }
+                            else if item.priority == "High" {
+                                Image(systemName: "exclamationmark.3")
+                                    .foregroundColor(.red)
+                            }
                                
                             Button {
                                 viewModel.removeItem(item)
@@ -181,6 +184,7 @@ struct ContentView: View {
                             .buttonStyle(BorderlessButtonStyle())
                         }
                         .padding([.vertical], 10)
+                        
                         
                         HStack {
                             if let notificationTime = item.notificationTime {
