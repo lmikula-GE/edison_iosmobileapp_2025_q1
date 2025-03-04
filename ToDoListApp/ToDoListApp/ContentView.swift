@@ -12,24 +12,20 @@ struct ContentView: View {
     
     @StateObject private var viewModel = ToDoListViewModel()
     
-    @State private var showSettings = false
-    @State private var isDatePickerPresented = false
-    @State private var isDatePickerPresented2 = false
     @State private var searchQuery = ""
     
     var body: some View {
         VStack {
             HStack {
                 Menu {
-                    Picker("Priority", selection: $viewModel.selectedPriority) {
+                    Picker("Priority", selection: $viewModel.priority) {
                         ForEach(Priority.allCases) { priority in
                             Text(priority.rawValue).tag(priority)
                         }
                     }
-                    .pickerStyle(MenuPickerStyle())
                     
                     Menu("Tag") {
-                        Picker("Tag", selection: $viewModel.selectedTag) {
+                        Picker("Tag", selection: $viewModel.tag) {
                             ForEach(availableTags, id: \.self) { tag in
                                 Text(tag).tag(tag)
                             }
@@ -37,15 +33,17 @@ struct ContentView: View {
                     }
                     
                     Button("Set Notification Time") {
-                        isDatePickerPresented = true  // Open the sheet
+                        viewModel.showDatePickerToAdd = true
                     }
                     
                 } label: {
-                    Image(systemName: "info.circle.fill")
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 30))
+                        .imageScale(.small)
                     .padding(8)
                     .cornerRadius(8)
                 }
-                .sheet(isPresented: $isDatePickerPresented) {
+                .sheet(isPresented: $viewModel.showDatePickerToAdd) {
                     VStack {
                         DatePicker("Set Notification", selection: Binding(
                             get: { viewModel.notificationTime ?? Date() },
@@ -56,7 +54,7 @@ struct ContentView: View {
                         .padding()
                         
                         Button("Done") {
-                            isDatePickerPresented = false
+                            viewModel.showDatePickerToAdd = false
                         }
                         .padding()
                     }
@@ -64,12 +62,18 @@ struct ContentView: View {
 
                 TextField("Input task", text: $viewModel.inputTask)
 
-                Button("Add") {
+                Button {
                     viewModel.addItem()
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 30))
+                        .imageScale(.medium)
                 }
+                
             }
             .padding([.leading, .trailing, .bottom], 15)
             .background(Color.blue.opacity(0.2))
+
             
             TextField("Search tasks...", text: $viewModel.searchQuery)
                 .padding()
@@ -109,6 +113,15 @@ struct ContentView: View {
                             
                             Spacer()
                             
+                            if item.priority == "Medium" {
+                                Image(systemName: "exclamationmark.2")
+                                    .foregroundColor(.orange)
+                            }
+                            else if item.priority == "High" {
+                                Image(systemName: "exclamationmark.3")
+                                    .foregroundColor(.red)
+                            }
+                            
                             if viewModel.editingItemId == item.id {
                                 Menu {
                                     Picker("Priority", selection: Binding(
@@ -119,7 +132,6 @@ struct ContentView: View {
                                         Text("Medium").tag("Medium")
                                         Text("High").tag("High")
                                     }
-                                    .pickerStyle(MenuPickerStyle())
 
                                     Picker("Tag", selection: Binding(
                                         get: { item.tag },
@@ -129,16 +141,21 @@ struct ContentView: View {
                                             Text(tag).tag(tag)
                                         }
                                     }
-                                    .pickerStyle(MenuPickerStyle())
                                     
-                                    Button("Set Notification Time") {
-                                        isDatePickerPresented2 = true 
+                                    Button("Set Notification") {
+                                        viewModel.showDatePickerToUpdate = true 
                                     }
-
+                                    
+                                    if item.notificationTime != nil {
+                                        Button("Remove Notification") {
+                                            viewModel.updateNotificationTime(item, nil)
+                                            viewModel.showDatePickerToUpdate = false
+                                        }
+                                    }
                                 } label: {
                                     Image(systemName: "square.and.pencil")
                                 }
-                                .sheet(isPresented: $isDatePickerPresented2) {
+                                .sheet(isPresented: $viewModel.showDatePickerToUpdate) {
                                     VStack {
                                         DatePicker("Set Notification", selection: Binding(
                                             get: { item.notificationTime ?? Date() },
@@ -149,13 +166,13 @@ struct ContentView: View {
                                         .padding()
                                         
                                         Button("Done") {
-                                            isDatePickerPresented2 = false
+                                            viewModel.showDatePickerToUpdate = false
                                         }
                                         .padding()
                                     }
                                 }
                             }
-                            
+                               
                             Button {
                                 viewModel.removeItem(item)
                             } label: {
@@ -168,7 +185,7 @@ struct ContentView: View {
                         HStack {
                             if let notificationTime = item.notificationTime {
                                 Text("⏰ \(formattedDate(notificationTime))")
-                                    .foregroundColor(.orange)
+                                    .foregroundColor(.gray)
                             }
                             
                             Spacer()
@@ -177,21 +194,16 @@ struct ContentView: View {
                                 Text("#\(item.tag)")
                                     .foregroundColor(.gray)
                             }
-                            
-
                         }
-                        
                     }
-                    }
-                   
+                }
             }
             
-            Spacer()
             
             HStack {
                 Spacer()
                 Button {
-                    showSettings = true
+                    viewModel.showSettings = true
                 } label: {
                     Image(systemName: "gearshape.fill")
                         .font(.system(size: 28))
@@ -200,7 +212,7 @@ struct ContentView: View {
                         .clipShape(Circle())
                         .shadow(radius: 5)
                 }
-                .popover(isPresented: $showSettings, arrowEdge: .bottom) {
+                .popover(isPresented: $viewModel.showSettings, arrowEdge: .bottom) {
                     VStack {
                         Toggle("Hide Completed Tasks", isOn: $viewModel.hideCompleted)
                             .padding()
@@ -211,7 +223,7 @@ struct ContentView: View {
                     .cornerRadius(10)
                     .shadow(radius: 10)
                 }
-                .padding(8)  // Optional: You can adjust the padding around the button
+                .padding(8) 
             }
         }
         .onAppear() {
@@ -221,11 +233,18 @@ struct ContentView: View {
     }
     
     func formattedDate(_ date: Date) -> String {
-           let formatter = DateFormatter()
-           formatter.dateStyle = .none
-           formatter.timeStyle = .short
-           return formatter.string(from: date)
-       }
+        let formatter = DateFormatter()
+        
+        if Calendar.current.isDateInToday(date) {
+            formatter.dateStyle = .none
+        }
+        else {
+            formatter.dateStyle = .short
+        }
+        
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
+    }
 }
 
 #Preview {

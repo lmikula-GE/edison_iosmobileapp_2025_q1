@@ -7,4 +7,4 @@
 
 import Foundation
 
-let availableTags = ["None", "Work", "Personal", "Shopping"]
+let availableTags = ["None", "Work", "School", "Personal", "Shopping"]

@@ -16,21 +16,25 @@ class ToDoListViewModel: ObservableObject {
     @Published var editingItemId: UUID?
     @Published var inputTask: String = "test"
     @Published var toDoItems: [ToDoItem] = []
-    @Published var selectedTag: String = "None"
+    
+    @Published var priority: Priority = .Low
+    @Published var tag: String = "None"
     @Published var notificationTime: Date? = nil
-    @Published var selectedPriority: Priority = .Low
     @Published var hideCompleted: Bool = false
+    
     @Published var searchQuery: String = ""
-
+    @Published var showSettings = false
+    @Published var showDatePickerToAdd = false
+    @Published var showDatePickerToUpdate = false    
+    
     var filteredItems: [ToDoItem] {
        let filteredByCompletion = hideCompleted ? toDoItems.filter { !$0.isComplete } : toDoItems
        return searchQuery.isEmpty ? filteredByCompletion : filteredByCompletion.filter { $0.title.localizedCaseInsensitiveContains(searchQuery) }
     }
        
-  
     func addItem() {
         if inputTask.isEmpty { return }
-        let newItem = ToDoItem(title: inputTask, priority: selectedPriority.rawValue, tag: selectedTag, notificationTime: notificationTime)
+        let newItem = ToDoItem(title: inputTask, priority: priority.rawValue, tag: tag, notificationTime: notificationTime)
         toDoItems.append(newItem)
         sortItemsByPriority()
         inputTask = ""
@@ -103,7 +107,7 @@ class ToDoListViewModel: ObservableObject {
         let timeInterval = notificationTime.timeIntervalSinceNow
         if timeInterval <= 0 {
             print("Notification time has already passed.")
-            return // Don't schedule a notification if it's in the past
+            return
         }
 
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [item.id.uuidString])
@@ -116,7 +120,6 @@ class ToDoListViewModel: ObservableObject {
         let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: notificationTime)
         let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
 
-//        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: timeInterval, repeats: false)
         let request = UNNotificationRequest(identifier: item.id.uuidString, content: content, trigger: trigger)
         
         UNUserNotificationCenter.current().add(request) { error in
@@ -141,7 +144,6 @@ class ToDoListViewModel: ObservableObject {
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        // Handle the notification and perform necessary actions
         completionHandler()
     }
     
