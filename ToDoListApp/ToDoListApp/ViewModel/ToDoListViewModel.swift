@@ -14,7 +14,7 @@ class ToDoListViewModel: ObservableObject {
     
     private let repository: ToDoListRepository = ToDoListRepositoryImpl()
     @Published var editingItemId: UUID?
-    @Published var inputTask: String = "test"
+    @Published var inputTask: String = ""
     @Published var toDoItems: [ToDoItem] = []
     
     @Published var priority: Priority = .Low
